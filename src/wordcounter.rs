@@ -4,8 +4,8 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum WordCountError {
-    #[error("Wordcount not implement yet")]
-    NotImplemented,
+    #[error("Source contains no data")]
+    EmptySource,
 
     #[error("Read error")]
     ReadError { source: std::io::Error },
@@ -16,24 +16,23 @@ pub enum WordCountError {
 
 pub fn count_words<R: Read>(input: &mut R) -> Result<u32, WordCountError> {
     let reader = BufReader::new(input);
-    let mut wordcount: u32 = 0;
+    let mut wordcount = 0;
     for line in reader.lines() {
-        for _word in line
-            .map_err(|source| WordCountError::ReadError { source })?
-            .split_whitespace()
-        {
+        let line = line.map_err(|source| WordCountError::ReadError { source })?;
+        for _word in line.split_whitespace() {
             wordcount += 1;
         }
+    }
+    if wordcount == 0 {
+        return Err(WordCountError::EmptySource);
     }
     Ok(wordcount)
 }
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
-    use std::fs::File;
-    use std::io::{self, ErrorKind};
+    use std::io::{self, Cursor, ErrorKind};
 
     // ---------------------------------------------------------------------------------
     // Copied (with slight modifications) from:
@@ -63,21 +62,28 @@ mod tests {
     // ---------------------------------------------------------------------------------
 
     #[test]
-    fn count_words_in_file() {
-        let mut f = File::open("words.txt").unwrap();
+    fn count_single_word() {
+        let mut f = Cursor::new(String::from("foobar"));
         let wordcount = count_words(&mut f).unwrap();
-        assert_eq!(wordcount, 50);
+        assert_eq!(wordcount, 1);
     }
 
     #[test]
-    fn returns_wordcounterror_on_pipeerror() {
-        let mut f = ErrReader::new(ErrorKind::BrokenPipe, "read: broken pipe");
+    fn count_multiple_words() {
+        let mut f = Cursor::new(String::from("foo bar\nbaz"));
+        let wordcount = count_words(&mut f).unwrap();
+        assert_eq!(wordcount, 3);
+    }
+
+    #[test]
+    fn empty_input() {
+        let mut f = Cursor::new(String::from(""));
         let err = count_words(&mut f).unwrap_err();
-        assert_matches!(err, WordCountError::ReadError{..});
+        assert_matches!(err, WordCountError::EmptySource{..});
     }
 
     #[test]
-    fn returns_wordcounterror_on_other_error() {
+    fn read_timeout() {
         let mut f = ErrReader::new(ErrorKind::TimedOut, "read: timeout");
         let err = count_words(&mut f).unwrap_err();
         assert_matches!(err, WordCountError::ReadError{..});
