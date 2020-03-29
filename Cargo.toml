@@ -1,0 +1,19 @@
+[package]
+name = "rust-wordcount"
+version = "0.1.0"
+authors = ["Nick Groenen <nick@groenen.me>"]
+edition = "2018"
+
+[[bin]]
+name = "rwc"
+path = "src/main.rs"
+
+[lib]
+name = "wordcount"
+
+[dependencies]
+anyhow = "1.0"
+thiserror = "1.0"
+
+[dev-dependencies]
+assert_matches = "1.3"
