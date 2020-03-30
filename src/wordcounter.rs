@@ -1,19 +1,54 @@
+//! This module contains the actual `count_words` implementation.
+//!
+//! Code inside this file is meant to demonstrate library code, that is code
+//! which might be used as a library by other projects.
+//!
+//! Such code should use the regular [`Result<T, E>`] type to provide
+//! interoperability, rather than forcing people to adopt a specific error
+//! handling library.
+//!
+//! The errors returned by this library are variants of [`WordCountError`].
+//! They implement the standard library's [`std::error::Error`] trait using a
+//! convenient derive macro provided by [`thiserror`].
+//!
+//! [`Result<T, E>`]: https://doc.rust-lang.org/std/result/index.html
+//! [`WordCountError`]: enum.WordCountError.html
+//! [`std::error::Error`]: https://doc.rust-lang.org/std/error/trait.Error.html
+//! [`thiserror`]: ../thiserror/index.html
+
 use std::io::prelude::*;
 use std::io::BufReader;
 use thiserror::Error;
 
+/// WordCountError enumerates all possible errors returned by this library.
 #[derive(Error, Debug)]
 pub enum WordCountError {
+    /// Represents an empty source. For example, an empty text file being given
+    /// as input to `count_words()`.
     #[error("Source contains no data")]
     EmptySource,
 
+    /// Represents a failure to read from input.
     #[error("Read error")]
     ReadError { source: std::io::Error },
 
+    /// Represents all other cases of `std::io::Error`.
     #[error(transparent)]
     IOError(#[from] std::io::Error),
 }
 
+/// Count the number of words in the given input.
+///
+/// # Examples
+///
+/// ```
+/// use std::io::Cursor;
+/// use wordcount::wordcounter;
+///
+/// let mut f = Cursor::new(String::from("foobar"));
+/// let wordcount = wordcounter::count_words(&mut f).unwrap();
+/// assert_eq!(wordcount, 1);
+/// ```
 pub fn count_words<R: Read>(input: &mut R) -> Result<u32, WordCountError> {
     let reader = BufReader::new(input);
     let mut wordcount = 0;
