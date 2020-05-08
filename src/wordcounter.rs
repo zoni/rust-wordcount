@@ -120,8 +120,8 @@ mod tests {
     }
 
     #[test]
-    fn read_timeout() {
-        let mut f = ErrReader::new(ErrorKind::TimedOut, "read: timeout");
+    fn read_broken_pipe() {
+        let mut f = ErrReader::new(ErrorKind::BrokenPipe, "read: broken pipe");
         let err = count_words(&mut f).unwrap_err();
         assert_matches!(err, WordCountError::ReadError{..});
     }
